@@ -24,7 +24,8 @@
     "@angular/http": "^2.0.0"
   },
   "dependencies": {
-    "ng2-translate": "4.2.0"
+    "ng2-translate": "4.2.0",
+    "ng2-cache": "0.1.6"
   },
   "devDependencies": {
     "@angular/common": "2.4.1",

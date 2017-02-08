@@ -15,6 +15,7 @@
  */
 import { NgModule, ModuleWithProviders } from '@angular/core';
 import { HttpModule, Http } from '@angular/http';
+import { CacheService } from 'ng2-cache/ng2-cache';
 import { CommonModule } from '@angular/common';
 import { TranslateModule, MissingTranslationHandler, TranslateLoader } from 'ng2-translate';
 
@@ -38,8 +39,8 @@ export * from './src/component';
 export * from './src/language';
 export * from './src/interceptor';
 
-export function translatePartialLoader(http: Http) {
-    return new TranslatePartialLoader(http, 'i18n', '.json');
+export function translatePartialLoader(http: Http, cacheService: CacheService) {
+    return new TranslatePartialLoader(http, cacheService, 'i18n', '.json');
 }
 
 export function missingTranslationHandler() {

@@ -16,11 +16,12 @@
 import { Http } from '@angular/http';
 import { Observable } from 'rxjs/Observable';
 import { TranslateLoader } from 'ng2-translate';
+import { CacheService } from 'ng2-cache/ng2-cache';
 
 export class TranslatePartialLoader implements TranslateLoader {
     private locations: string[] = [];
 
-    constructor(private http: Http, private prefix = 'i18n', private suffix = '.json') {
+    constructor(private http: Http, private cacheService: CacheService, private prefix = 'i18n', private suffix = '.json') {
     }
 
     public setLocations(locations: string[]) {
@@ -29,23 +30,41 @@ export class TranslatePartialLoader implements TranslateLoader {
 
     public getTranslation(lang: string): Observable<any> {
         let combinedObject = new Object();
-        let oldObsevers: Observable<any>;
+        let oldObservers: Observable<any>;
         let newObserver: Observable<any>;
         this.locations.forEach((value) => {
             newObserver = this.getPartFile(value, combinedObject, lang);
-            if (oldObsevers == null) {
-                oldObsevers = newObserver;
+            if (oldObservers == null) {
+                oldObservers = newObserver;
             } else {
-                oldObsevers = oldObsevers.merge(newObserver);
+                oldObservers = oldObservers.merge(newObserver);
             }
         });
-        return oldObsevers;
+        return oldObservers;
     }
 
     private getPartFile(part: string, combinedObject: any, lang: string): Observable<any> {
         return Observable.create((observer: any) => {
-            this.http.get(`${this.prefix}/${lang}/${part}${this.suffix}`).subscribe((res) => {
-                let responseObj = res.json();
+            if (!this.cacheService.exists(`${this.prefix}/${lang}/${part}${this.suffix}`)) {
+                this.http.get(`${this.prefix}/${lang}/${part}${this.suffix}`).subscribe((res) => {
+                    console.log(`${this.prefix}/${lang}/${part}${this.suffix}`);
+                    this.cacheService.set(`${this.prefix}/${lang}/${part}${this.suffix}`, [res], {maxAge: 3600});
+                    let responseObj = res.json();
+                    Object.keys(responseObj).forEach(key => {
+                        if (!combinedObject[key]) {
+                            combinedObject[key] = responseObj[key];
+                        } else {
+                            Object.assign(combinedObject[key], responseObj[key]);
+                        }
+                    });
+                    observer.next(combinedObject);
+                    // Call complete to close this stream (like a promise)
+                    observer.complete();
+                });
+            } else {
+                let data: any|null = this.cacheService.get(`${this.prefix}/${lang}/${part}${this.suffix}`);
+                console.log('Data: ', data);
+                let responseObj = data.json();
                 Object.keys(responseObj).forEach(key => {
                     if (!combinedObject[key]) {
                         combinedObject[key] = responseObj[key];
@@ -56,7 +75,7 @@ export class TranslatePartialLoader implements TranslateLoader {
                 observer.next(combinedObject);
                 // Call complete to close this stream (like a promise)
                 observer.complete();
-            });
+            }
         });
     }
 }
